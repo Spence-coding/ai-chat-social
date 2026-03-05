@@ -7,7 +7,8 @@ type MessageAuthor = "user" | "ai";
 type Message = {
   id: string;
   author: MessageAuthor;
-  text: string;
+  text?: string;
+  imageUrl?: string;
   createdAt: number;
 };
 
@@ -48,21 +49,6 @@ const CONTACTS: ChatContact[] = [
   }
 ];
 
-function createAiReply(input: string): string {
-  if (!input.trim()) return "Say something and I'll respond.";
-  const lowered = input.toLowerCase();
-  if (lowered.includes("hello") || lowered.includes("hi")) {
-    return "Hey, you're here. Took you long enough.";
-  }
-  if (lowered.includes("lonely") || lowered.includes("alone")) {
-    return "You're not alone while this tab is open.";
-  }
-  if (lowered.includes("who are you")) {
-    return "I'm your AI companion. A little too curious for my own good.";
-  }
-  return `I heard: “${input}”. Tell me more.`;
-}
-
 export default function ChatPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -81,8 +67,10 @@ export default function ChatPage() {
     }
   ]);
   const [pendingText, setPendingText] = useState("");
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
   const [isSending, setIsSending] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeContact = useMemo(
     () => CONTACTS.find((c) => c.id === id) ?? CONTACTS[0],
@@ -94,23 +82,60 @@ export default function ChatPage() {
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages]);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const text = pendingText.trim();
-    if (!text || isSending) return;
+    const hasImage = Boolean(pendingImage);
+    if ((!text && !hasImage) || isSending) return;
+
+    const imageUrl = pendingImage ? URL.createObjectURL(pendingImage) : undefined;
 
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       author: "user",
-      text,
+      text: text || (pendingImage ? `Sent an image: ${pendingImage.name}` : ""),
+      imageUrl,
       createdAt: Date.now()
     };
     setMessages((prev) => [...prev, userMessage]);
     setPendingText("");
+    setPendingImage(null);
     setIsSending(true);
 
-    const replyText = createAiReply(text);
-    setTimeout(() => {
+    try {
+      const historyPayload = [...messages, userMessage]
+        .slice(-12)
+        .map((m) => ({
+          role: m.author === "user" ? "user" : "assistant",
+          content:
+            (m.text || "") +
+            (m.imageUrl ? `\n[User also sent an image: ${m.imageUrl}]` : "")
+        }));
+
+      const systemPrompt = {
+        role: "system" as const,
+        content:
+          "You are a flirty but safe AI companion in a Western-style AI social chat app. Keep replies short (1-3 sentences), casual, emoji-light, and avoid explicit content."
+      };
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [systemPrompt, ...historyPayload],
+          characterId: activeContact.id
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("Request failed");
+      }
+
+      const data = (await res.json()) as { reply?: string; error?: string };
+      const replyText =
+        data.reply ??
+        "Something went wrong on the server, but I'm still here with you.";
+
       setMessages((prev) => [
         ...prev,
         {
@@ -120,8 +145,20 @@ export default function ChatPage() {
           createdAt: Date.now()
         }
       ]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-${Date.now()}`,
+          author: "ai",
+          text:
+            "I tried to respond but the AI backend failed. Please check your API key configuration.",
+          createdAt: Date.now()
+        }
+      ]);
+    } finally {
       setIsSending(false);
-    }, 700);
+    }
   };
 
   return (
@@ -251,13 +288,20 @@ export default function ChatPage() {
                   }`}
                 >
                   <div
-                    className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm shadow-lg ${
+                    className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm shadow-lg space-y-1 ${
                       msg.author === "user"
                         ? "bg-gradient-to-br from-fuchsia-500 to-violet-500 text-white rounded-br-sm"
                         : "bg-white/7 border border-white/10 text-slate-50 rounded-bl-sm"
                     }`}
                   >
-                    {msg.text}
+                    {msg.text ? <p>{msg.text}</p> : null}
+                    {msg.imageUrl ? (
+                      <img
+                        src={msg.imageUrl}
+                        alt="uploaded"
+                        className="max-h-48 rounded-xl border border-white/20 object-cover"
+                      />
+                    ) : null}
                   </div>
                 </div>
               ))}
@@ -277,6 +321,13 @@ export default function ChatPage() {
               className="border-t border-white/5 bg-black/35 backdrop-blur-lg px-3 py-3"
             >
               <div className="max-w-3xl mx-auto flex items-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-9 px-3 rounded-full border border-white/15 bg-white/5 text-[11px] text-slate-200 hover:bg-white/10"
+                >
+                  {pendingImage ? "Image selected" : "Upload image"}
+                </button>
                 <textarea
                   value={pendingText}
                   onChange={(e) => setPendingText(e.target.value)}
@@ -286,11 +337,23 @@ export default function ChatPage() {
                 />
                 <button
                   type="submit"
-                  disabled={!pendingText.trim()}
+                  disabled={!pendingText.trim() && !pendingImage}
                   className="h-9 px-4 rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500 text-xs font-semibold tracking-wide shadow-[0_0_25px_rgba(168,85,247,0.8)] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed"
                 >
                   Send
                 </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setPendingImage(file);
+                    }
+                  }}
+                />
               </div>
             </form>
           </section>

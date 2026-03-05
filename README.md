@@ -40,3 +40,13 @@ The app will be available at `http://localhost:3000`.
 
 No environment variables or secrets are required; everything runs fully on the client side.
 
+## Optional: Connect real AI (OpenAI / DeepSeek)
+
+By default the chat page will call `/api/chat`. To make it talk to a real model:
+
+- For **DeepSeek** (recommended): set a `DEEPSEEK_API_KEY` in your Vercel Project → Settings → Environment Variables.
+- Or for **OpenAI**: set an `OPENAI_API_KEY` instead.
+
+If both are set, the app will prefer **DeepSeek**. If neither is set, the chat will show an error message when it cannot reach the backend.
+
+

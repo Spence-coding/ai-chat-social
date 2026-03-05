@@ -9,7 +9,11 @@ type Tag =
   | "Tsundere"
   | "Friend"
   | "Gamer"
-  | "SciFi";
+  | "SciFi"
+  | "Cozy"
+  | "Chaotic"
+  | "Streamer"
+  | "NSFW-Safe";
 
 type Character = {
   id: string;
@@ -25,7 +29,7 @@ const CHARACTERS: Character[] = [
     id: "kaya",
     name: "Kaya, Your Childhood Friend",
     tagline: "Looks cold, secretly very soft on you.",
-    tags: ["Cute", "Tsundere", "Friend"],
+    tags: ["Cute", "Tsundere", "Friend", "Cozy"],
     online: true,
     avatarColor: "from-fuchsia-400 to-violet-500"
   },
@@ -33,7 +37,7 @@ const CHARACTERS: Character[] = [
     id: "raven",
     name: "Raven, Midnight Hacker",
     tagline: "Dark mode only. Can she hack your heart?",
-    tags: ["Cool", "Gamer", "SciFi"],
+    tags: ["Cool", "Gamer", "SciFi", "Chaotic"],
     online: false,
     avatarColor: "from-slate-500 to-purple-600"
   },
@@ -41,7 +45,7 @@ const CHARACTERS: Character[] = [
     id: "ava",
     name: "Ava, Runway Muse",
     tagline: "Fashion, drama, and a little chaos.",
-    tags: ["Mature", "Cool", "Fantasy"],
+    tags: ["Mature", "Cool", "Fantasy", "Streamer"],
     online: true,
     avatarColor: "from-rose-400 to-fuchsia-500"
   },
@@ -49,9 +53,41 @@ const CHARACTERS: Character[] = [
     id: "luna",
     name: "Luna, Dream Witch",
     tagline: "Reads your dreams, not your mind. Maybe.",
-    tags: ["Fantasy", "Cute"],
+    tags: ["Fantasy", "Cute", "Cozy"],
     online: true,
     avatarColor: "from-indigo-400 to-sky-500"
+  },
+  {
+    id: "nico",
+    name: "Nico, Chaotic Streamer",
+    tagline: "Goes live, says too much, never deletes the VOD.",
+    tags: ["Gamer", "Chaotic", "Streamer"],
+    online: true,
+    avatarColor: "from-purple-500 to-pink-500"
+  },
+  {
+    id: "sasha",
+    name: "Sasha, Office Crush",
+    tagline: "Sends you memes during meetings, remembers your coffee order.",
+    tags: ["Mature", "Cozy", "Friend"],
+    online: false,
+    avatarColor: "from-amber-400 to-rose-500"
+  },
+  {
+    id: "iris",
+    name: "Iris, Cloud Witch",
+    tagline: "Works in tech support, secretly a feelings support witch.",
+    tags: ["Fantasy", "Cool", "NSFW-Safe"],
+    online: true,
+    avatarColor: "from-sky-400 to-indigo-500"
+  },
+  {
+    id: "leo",
+    name: "Leo, Soft Boyfriend Beta",
+    tagline: "Therapy-speak, voice messages, playlists for every mood.",
+    tags: ["Cozy", "Cute", "Friend"],
+    online: true,
+    avatarColor: "from-emerald-400 to-cyan-500"
   }
 ];
 
@@ -63,7 +99,11 @@ const ALL_TAGS: Tag[] = [
   "Tsundere",
   "Friend",
   "Gamer",
-  "SciFi"
+  "SciFi",
+  "Cozy",
+  "Chaotic",
+  "Streamer",
+  "NSFW-Safe"
 ];
 
 export default function Home() {
